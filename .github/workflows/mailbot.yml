@@ -38,3 +38,7 @@ jobs:
           MAILBOT_PUSH_URL: ${{ secrets.MAILBOT_PUSH_URL }}
           MAILBOT_PUSH_SECRET: ${{ secrets.MAILBOT_PUSH_SECRET }}
           SELFTEST: ${{ inputs.selftest }}
+          # optional fuer ein eigenes Postfach (Repository-Variablen):
+          MAILBOT_USER: ${{ vars.MAILBOT_USER }}
+          MAILBOT_IMAP_HOST: ${{ vars.MAILBOT_IMAP_HOST }}
+          MAILBOT_SMTP_HOST: ${{ vars.MAILBOT_SMTP_HOST }}

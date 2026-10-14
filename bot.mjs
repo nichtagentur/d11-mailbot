@@ -11,7 +11,9 @@ import { buildReply, sendMail, extractQuestion, APP_URL } from './mail.mjs';
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(DIR, 'out');
 const STATE_FILE = path.join(DIR, 'state.json');
-const SELF = 'support@nichtagentur.at';
+// Postfach des Bots: per Umgebungsvariable aenderbar (Standard: Workshop-Postfach)
+const SELF = process.env.MAILBOT_USER || 'support@nichtagentur.at';
+const IMAP_HOST = process.env.MAILBOT_IMAP_HOST || 'mail.easyname.eu';
 fs.mkdirSync(OUT, { recursive: true });
 
 // events: real module if present, else stub
@@ -56,7 +58,7 @@ const getState = () => ({ allowedFrom: OWNER, status: live.status, startedAt, la
 const msgText = e => String((e && e.message) || e).replace(/\s+/g, ' ').slice(0, 300);
 
 function imapClient() {
-  return new ImapFlow({ host: 'mail.easyname.eu', port: 993, secure: true, auth: { user: SELF, pass: process.env.SMTP_PASS }, logger: false });
+  return new ImapFlow({ host: IMAP_HOST, port: 993, secure: true, auth: { user: SELF, pass: process.env.SMTP_PASS }, logger: false });
 }
 
 // ---- filter ----

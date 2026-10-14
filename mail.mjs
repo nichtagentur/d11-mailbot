@@ -40,7 +40,7 @@ export function buildReply({ orig, answer, imagePath, question, imageSrc }) {
 </table></td></tr></table></body></html>`;
   const text = `${String(answer.reply || '').replace(/\*\*/g, '')}\n\nIn der App oeffnen: ${link}\nStartseite: ${APP_URL}\n\nKosten dieser Antwort (inkl. Screenshot): ${cost}\nAutomatische Antwort von d11-mailbot\n`;
   const msg = {
-    from: '"Wien Chat Bot" <support@nichtagentur.at>', to, subject, html, text,
+    from: `"Wien Chat Bot" <${process.env.MAILBOT_USER || 'support@nichtagentur.at'}>`, to, subject, html, text,
     headers: { 'X-Mailbot': 'd11', 'Auto-Submitted': 'auto-replied' },
   };
   if (orig.messageId) { msg.inReplyTo = orig.messageId; msg.references = [...(orig.references || []), orig.messageId]; }
@@ -50,8 +50,8 @@ export function buildReply({ orig, answer, imagePath, question, imageSrc }) {
 
 export async function sendMail(msg) {
   const t = nodemailer.createTransport({
-    host: 'mail.easyname.eu', port: 587, secure: false, requireTLS: true,
-    auth: { user: 'support@nichtagentur.at', pass: process.env.SMTP_PASS },
+    host: process.env.MAILBOT_SMTP_HOST || 'mail.easyname.eu', port: 587, secure: false, requireTLS: true,
+    auth: { user: process.env.MAILBOT_USER || 'support@nichtagentur.at', pass: process.env.SMTP_PASS },
     connectionTimeout: 20000, greetingTimeout: 20000, socketTimeout: 20000,
   });
   try { return await t.sendMail(msg); } finally { t.close(); }

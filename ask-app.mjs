@@ -1,7 +1,4 @@
-import fs from 'fs';
-import { pathToFileURL } from 'url';
 
-const P = '/home/student/Projects/d11-wien-chat/public/';
 const URL_ = 'https://d11-wien-chat.nichtagentur.workers.dev/api/chat';
 const ORIGIN = 'https://d11-wien-chat.nichtagentur.workers.dev';
 const arr = x => Array.isArray(x) ? x : [];
@@ -10,10 +7,11 @@ const str = x => x == null ? '' : String(x);
 let routingP = null;
 function loadRouting() {
   if (!routingP) routingP = (async () => {
-    const mod = await import(pathToFileURL(P + 'routing.js').href);
-    const g = JSON.parse(fs.readFileSync(P + 'graph.json', 'utf8'));
-    const s = JSON.parse(fs.readFileSync(P + 'stops.json', 'utf8'));
-    return { mod, g, s };
+    // immer von der veroeffentlichten App laden: passt zur Live-Version, laeuft auch in der Cloud
+    const get = async f => { const r = await fetch(ORIGIN + '/' + f, { signal: AbortSignal.timeout(20000) }); if (!r.ok) throw new Error(f + ' HTTP ' + r.status); return r.text(); };
+    const [js, g, s] = await Promise.all([get('routing.js'), get('graph.json'), get('stops.json')]);
+    const mod = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'));
+    return { mod, g: JSON.parse(g), s: JSON.parse(s) };
   })();
   return routingP;
 }
