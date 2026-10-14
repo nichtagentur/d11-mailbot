@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 import fs from 'fs';
 import { execSync } from 'child_process';
-const APP = 'https://d11-wien-chat.nichtagentur.workers.dev/';
+const APP = (process.env.MAILBOT_APP_URL || 'https://d11-wien-chat.nichtagentur.workers.dev').replace(/\/?$/, '/');
 
 function pw() {
   try { return createRequire(import.meta.url)('playwright'); } catch {}

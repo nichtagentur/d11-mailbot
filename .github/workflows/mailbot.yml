@@ -42,3 +42,4 @@ jobs:
           MAILBOT_USER: ${{ vars.MAILBOT_USER }}
           MAILBOT_IMAP_HOST: ${{ vars.MAILBOT_IMAP_HOST }}
           MAILBOT_SMTP_HOST: ${{ vars.MAILBOT_SMTP_HOST }}
+          MAILBOT_APP_URL: ${{ vars.MAILBOT_APP_URL }}

@@ -1,6 +1,6 @@
 
-const URL_ = 'https://d11-wien-chat.nichtagentur.workers.dev/api/chat';
-const ORIGIN = 'https://d11-wien-chat.nichtagentur.workers.dev';
+const ORIGIN = (process.env.MAILBOT_APP_URL || 'https://d11-wien-chat.nichtagentur.workers.dev').replace(/\/$/, '');
+const URL_ = ORIGIN + '/api/chat';
 const arr = x => Array.isArray(x) ? x : [];
 const str = x => x == null ? '' : String(x);
 

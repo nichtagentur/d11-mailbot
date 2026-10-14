@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 
-export const APP_URL = 'https://d11-wien-chat.nichtagentur.workers.dev/';
+// Adresse der Chat-App (per MAILBOT_APP_URL aenderbar, z. B. nach Umzug auf ein eigenes Cloudflare-Konto)
+export const APP_URL = (process.env.MAILBOT_APP_URL || 'https://d11-wien-chat.nichtagentur.workers.dev').replace(/\/?$/, '/');
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function mdToHtml(text) {
