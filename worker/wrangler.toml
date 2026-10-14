@@ -1,0 +1,13 @@
+name = "d11-mailbot"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "../public"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+
+[[kv_namespaces]]
+binding = "EVENTS"
+id = "d3e6af88e46e412c95189174e2c6960a"

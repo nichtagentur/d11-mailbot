@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>D11 Mailbot Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Monoton&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg-dark:#12062b;--surface:#1d0d40;--surface-2:#2b1458;--border:#5b3a9e;--glass:rgba(29,13,64,.88);
+--text:#fff4e6;--dim:#cdbdeb;--turq:#2ef2e0;--mag:#ff3ea5;--orange:#ff9a4d;--sun:#ffd23f;--danger:#ff6b6b;--ok:#5cf2a0;--grey:#8c82a8;
+--led-bg:#0a0414;--amber:#ffb02e;
+--neon-turq:0 0 6px rgba(46,242,224,.7),0 0 18px rgba(46,242,224,.35);--neon-mag:0 0 6px rgba(255,62,165,.7),0 0 18px rgba(255,62,165,.35)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font:16px/1.5 Inter,system-ui,sans-serif;color:var(--text);min-height:100vh;
+background:var(--bg-dark) linear-gradient(180deg,#12062b 0%,#2a0b52 55%,#5a1470 80%,#a3206f 100%) fixed}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:linear-gradient(90deg,#ff7a2f,#ff3ea5 55%,#7b2fd6);border-bottom:2px solid var(--turq);box-shadow:var(--neon-turq)}
+.sun{flex:0 0 auto}
+h1{font:400 30px Monoton,"Arial Black",sans-serif;letter-spacing:.04em;margin:0;background:linear-gradient(180deg,#fff 20%,var(--turq));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 6px rgba(255,62,165,.8))}
+.live{margin-left:auto;font:22px VT323,monospace;color:var(--ok);text-shadow:0 0 6px var(--ok)}
+.live.off{color:var(--danger);text-shadow:0 0 6px var(--danger)}
+main{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--led-bg);border:2px solid #3a2a5a;border-radius:10px;padding:8px 12px;min-width:0;
+background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 3px)}
+.tile label{display:block;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.tile .v{font:30px/1.1 VT323,monospace;color:var(--amber);text-shadow:0 0 6px rgba(255,176,46,.7);overflow-wrap:anywhere}
+.tile .v.ok{color:var(--ok)}.tile .v.err{color:var(--danger)}
+.cols{display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start}
+@media(max-width:800px){.cols{grid-template-columns:1fr}h1{font-size:22px}}
+.panel{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:12px;min-width:0}
+.panel h2{margin:0 0 10px;font:400 22px Monoton,sans-serif;color:var(--turq);text-shadow:var(--neon-mag);letter-spacing:.03em}
+#tl{display:flex;flex-direction:column;gap:8px;max-height:75vh;overflow-y:auto}
+.ev{border:1.5px solid var(--border);border-left-width:6px;border-radius:8px;padding:8px 12px;background:var(--surface);overflow-wrap:anywhere}
+.ev .h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ev .t{font:20px VT323,monospace;color:var(--dim)}
+.ev .ty{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.ev .b{font-size:15px;margin-top:2px}
+.ev.mail_in{border-color:var(--mag);background:var(--surface-2)}.ev.mail_in .ty{color:var(--mag)}
+.ev.ignored{border-color:var(--grey);color:var(--grey)}.ev.ignored .ty{color:var(--grey)}
+.ev.step{border-color:var(--turq)}.ev.step .ty{color:var(--turq)}
+.ev.reply_sent{border-color:var(--ok)}.ev.reply_sent .ty{color:var(--ok)}
+.ev.error{border-color:var(--danger)}.ev.error .ty{color:var(--danger)}
+.ev.start,.ev.poll,.ev.notify{border-color:var(--border)}.ev .ty{color:var(--sun)}
+.ev img{display:block;margin-top:6px;max-width:100%;max-height:180px;border-radius:6px;border:1px solid var(--border)}
+a{color:var(--turq)}
+iframe{width:100%;height:420px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.dim{color:var(--dim);font-size:14px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header>
+<svg class="sun" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd23f"/><stop offset="1" stop-color="#ff3ea5"/></linearGradient><clipPath id="c"><circle cx="22" cy="22" r="20"/></clipPath></defs><g clip-path="url(#c)"><rect width="44" height="44" fill="url(#g)"/><rect y="26" width="44" height="2" fill="#12062b"/><rect y="31" width="44" height="3" fill="#12062b"/><rect y="37" width="44" height="4" fill="#12062b"/></g></svg>
+<h1>D11 MAILBOT LIVE</h1>
+<div class="live off" id="live">verbinde...</div>
+</header>
+<main>
+<section class="tiles" aria-label="Status">
+<div class="tile"><label>Status</label><div class="v" id="t-status">-</div></div>
+<div class="tile"><label>Gestartet</label><div class="v" id="t-start">-</div></div>
+<div class="tile"><label>Letzter Poll</label><div class="v" id="t-poll">-</div></div>
+<div class="tile"><label>Mails verarbeitet</label><div class="v" id="t-proc">0</div></div>
+<div class="tile"><label>Antworten gesendet</label><div class="v" id="t-rep">0</div></div>
+<div class="tile"><label>Kosten gesamt</label><div class="v" id="t-cost">$0.00</div></div>
+<div class="tile"><label>Erlaubter Absender</label><div class="v" id="t-from">nur 1 Adresse (privat)</div></div>
+</section>
+<div class="cols">
+<section class="panel"><h2>Live-Verlauf</h2><div id="tl"><div class="dim" id="empty">Noch keine Ereignisse.</div></div></section>
+<section class="panel" id="prev-panel"><h2>Letzte Antwort</h2><iframe id="prev" sandbox title="Letzte Antwort" class="hide"></iframe><div class="dim" id="prev-empty">Noch keine Antwort.</div></section>
+</div>
+</main>
+<script>
+(function(){
+var qs=new URLSearchParams(location.search),K=qs.get('k'),PUBLIC=!!K;
+var $=function(id){return document.getElementById(id)};
+var seen=new Set(),state={},lastPoll=null,tl=$('tl');
+if(PUBLIC)$('prev-panel').classList.add('hide');
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function hhmmss(ts){try{return new Date(ts).toLocaleTimeString('de-AT')}catch(e){return ts}}
+function replyName(img){var m=/^shot-([a-z0-9._-]+)\.png$/.exec(img||'');return m?'reply-'+m[1]+'.html':null}
+function usd(v){v=Number(v)||0;return '$'+v.toFixed(5)+' ('+(v*100).toFixed(3).replace('.',',')+' ct)'}
+function body(e){
+ var p=[];
+ if(e.subject)p.push('<b>'+esc(e.subject)+'</b>');
+ if(e.from)p.push('von '+esc(e.from));
+ if(e.step)p.push(esc(e.step));
+ if(e.reason)p.push('Grund: '+esc(e.reason));
+ if(e.text)p.push(esc(e.text));
+ if(e.reply)p.push(esc(e.reply));
+ if(e.cost_usd!=null)p.push(usd(e.cost_usd));
+ if(e.ms!=null)p.push((e.ms/1000).toFixed(1)+' s');
+ return p.join(' &middot; ');
+}
+function add(e,live){
+ var id=e.ts+'|'+e.type+'|'+(e.step||e.subject||e.text||'');
+ if(seen.has(id))return;seen.add(id);
+ if(e.type==='poll'||e.type==='start'){if(e.type==='poll')lastPoll=e.ts;}
+ if(e.type==='poll')return; // polls only update the tile
+ $('empty')&&$('empty').remove();
+ var d=document.createElement('div');d.className='ev '+esc(e.type);
+ var h='<div class="h"><span class="t">'+hhmmss(e.ts)+'</span><span class="ty">'+esc(e.type.replace('_',' '))+'</span></div><div class="b">'+body(e)+'</div>';
+ if(e.type==='reply_sent'){
+  var rn=replyName(e.image),href=e.link||null;
+  if(!PUBLIC&&e.image)h+='<img src="/out/'+encodeURIComponent(e.image)+'" alt="Screenshot" onerror="this.remove()">';
+  if(!PUBLIC&&rn)h+='<div class="b"><a href="/out/'+encodeURIComponent(rn)+'" target="_blank" rel="noopener">Antwort ansehen</a></div>';
+  if(!PUBLIC&&rn){var f=$('prev');f.src='/out/'+encodeURIComponent(rn);f.classList.remove('hide');$('prev-empty').classList.add('hide')}
+ }
+ d.innerHTML=h;
+ tl.insertBefore(d,tl.firstChild);
+ while(tl.children.length>200)tl.removeChild(tl.lastChild);
+}
+function setState(s){
+ state=s||{};
+ if(state.lastPoll)lastPoll=state.lastPoll;
+ var st=$('t-status'),ok=(state.status||'running')!=='error';
+ st.textContent=ok?'running':'error';st.className='v '+(ok?'ok':'err');
+ $('t-start').textContent=state.startedAt?hhmmss(state.startedAt)+' '+new Date(state.startedAt).toLocaleDateString('de-AT'):'-';
+ $('t-proc').textContent=state.processed||0;$('t-rep').textContent=state.repliesCount!=null?state.repliesCount:Array.isArray(state.replies)?state.replies.length:(Number(state.replies)||0);
+ $('t-cost').textContent=usd(state.totalCostUsd);
+ if(state.allowedFrom||state.allowed)$('t-from').textContent=state.allowedFrom||state.allowed;
+}
+function tick(){
+ if(lastPoll){var s=Math.max(0,Math.round((Date.now()-new Date(lastPoll))/1000));$('t-poll').textContent='vor '+(s>=90?Math.floor(s/60)+' min':s+' s')}
+}
+setInterval(tick,1000);
+function liveState(ok){var l=$('live');l.textContent=ok?'LIVE':'getrennt';l.className='live'+(ok?'':' off')}
+function pollOnce(){
+ Promise.all([
+  fetch('/api/events?k='+encodeURIComponent(K),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()}),
+  fetch('/api/state?k='+encodeURIComponent(K),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()})
+ ]).then(function(a){a[0].forEach(function(e){add(e)});setState(a[1]);liveState(true)}).catch(function(){liveState(false)});
+}
+function refreshState(){fetch('/state',{cache:'no-store'}).then(function(r){return r.json()}).then(setState).catch(function(){})}
+if(PUBLIC){pollOnce();setInterval(pollOnce,5000)}
+else{
+ refreshState();setInterval(refreshState,5000);
+ var es=new EventSource('/events');
+ es.onopen=function(){liveState(true)};es.onerror=function(){liveState(false)};
+ es.onmessage=function(m){try{add(JSON.parse(m.data),true);}catch(e){}};
+}
+})();
+</script>
+</body>
+</html>

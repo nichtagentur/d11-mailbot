@@ -1,0 +1,33 @@
+name: d11-mailbot
+# Alle 5 Minuten: Postfach einmal pruefen, Mails von MAILBOT_OWNER beantworten.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+concurrency:
+  group: mailbot
+  cancel-in-progress: false
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Chromium (fuer den Screenshot)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: Postfach pruefen
+        run: node bot.mjs --once
+        env:
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAILBOT_OWNER: ${{ secrets.MAILBOT_OWNER }}
+          MAILBOT_PUSH_URL: ${{ secrets.MAILBOT_PUSH_URL }}
+          MAILBOT_PUSH_SECRET: ${{ secrets.MAILBOT_PUSH_SECRET }}

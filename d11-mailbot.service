@@ -1,0 +1,15 @@
+[Unit]
+Description=d11 Wien Chat mail bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/Projects/d11-mailbot
+ExecStart=/home/linuxbrew/.linuxbrew/bin/node bot.mjs
+Restart=always
+RestartSec=10
+Environment=DISPLAY=:1
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+Environment=NODE_PATH=/home/linuxbrew/.linuxbrew/lib/node_modules
+
+[Install]
+WantedBy=default.target
