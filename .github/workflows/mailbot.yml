@@ -3,7 +3,12 @@ name: d11-mailbot
 on:
   schedule:
     - cron: '*/5 * * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      selftest:
+        description: 'Testfrage: schickt eine Test-Antwort an MAILBOT_OWNER (leer = normal Postfach pruefen)'
+        required: false
+        default: ''
 concurrency:
   group: mailbot
   cancel-in-progress: false
@@ -25,9 +30,11 @@ jobs:
           key: pw-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - name: Postfach pruefen
-        run: node bot.mjs --once
+        run: |
+          if [ -n "$SELFTEST" ]; then node bot.mjs --selftest "$SELFTEST"; else node bot.mjs --once; fi
         env:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           MAILBOT_OWNER: ${{ secrets.MAILBOT_OWNER }}
           MAILBOT_PUSH_URL: ${{ secrets.MAILBOT_PUSH_URL }}
           MAILBOT_PUSH_SECRET: ${{ secrets.MAILBOT_PUSH_SECRET }}
+          SELFTEST: ${{ inputs.selftest }}
