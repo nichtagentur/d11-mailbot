@@ -42,7 +42,7 @@ const OWNER_DOMAIN = OWNER.split('@')[1];
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 let startedAt = process.env.MAILBOT_SINCE ? new Date(process.env.MAILBOT_SINCE) : new Date();
-const FOLDERS = ['INBOX', 'Junk']; // easyname sortiert manche echten Mails in Junk
+const FOLDERS = (process.env.MAILBOT_FOLDERS || 'INBOX,Junk').split(',').map(x => x.trim()).filter(Boolean); // easyname sortiert manche echten Mails in Junk
 let state = { processed: [], replies: [], totalCostUsd: 0 };
 try { state = { ...state, ...JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) }; } catch {}
 const saveState = () => {
@@ -134,6 +134,16 @@ async function handle(parsed, uid, { send = true, forceQuestion } = {}) {
     return { ok: true, question, answer };
   } catch (e) {
     emit('error', { reason: msgText(e), subject, from });
+    // keine stille Funkpause: kurze Fehlermail an den Owner (nur echte Mails, nicht dry-run/selftest)
+    if (send && !forceQuestion) {
+      try {
+        await sendMail({ from: `"Wien Chat Bot" <${SELF}>`, to: OWNER, subject: 'Re: ' + (subject || 'Deine Frage'),
+          text: `Deine Frage konnte gerade nicht beantwortet werden (${msgText(e).slice(0, 120)}).\nBitte in ein paar Minuten nochmal schicken oder direkt in der App fragen: ${APP_URL}\n\nAutomatische Antwort von d11-mailbot\n`,
+          headers: { 'X-Mailbot': 'd11', 'Auto-Submitted': 'auto-replied' },
+          ...(parsed.messageId ? { inReplyTo: parsed.messageId, references: [parsed.messageId] } : {}) });
+        emit('step', { step: 'Fehlermail gesendet' });
+      } catch {}
+    }
     return { error: msgText(e) };
   }
 }

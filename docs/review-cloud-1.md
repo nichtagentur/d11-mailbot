@@ -1,0 +1,45 @@
+# Review Cloud 1 (unabhaengig, 14.10.2026)
+
+Score: 7/10. Die Cloud-Kette laeuft ohne diesen Desktop. Es fehlen aber ein bestaetigter Cron-Lauf, eine Fehlermail bei Ausfall und einige Luecken in der Anleitung.
+
+## Geprueft (Ergebnis)
+- systemd d11-mailbot: disabled / inactive. OK.
+- Chat-App 200, Dashboard-Root ohne Key 403, /api/botstate ohne Secret 403. OK.
+- Workflow aktiv, 3 Laeufe (alle workflow_dispatch): success, failure ("Zu viele Tool-Schleifen", LLM-Zufall beim Selftest), success. Noch KEIN Lauf durch den Zeitplan (Stand 14:06 UTC, Repo erst ~14:00 angelegt).
+- Repo-Secrets vorhanden: MAILBOT_OWNER, MAILBOT_PUSH_SECRET, MAILBOT_PUSH_URL, SMTP_PASS. Keine Variables (Standardwerte greifen). Passt zum Workflow.
+- Secret-Scan (Dateien + gesamte Git-Historie, beide Repos): SMTP_PASS, OpenRouter-Keys, Push-Secret, View-Key, Owner-Adresse kommen nirgends vor. Einzige Mailadressen: support@nichtagentur.at und spam@example.org (Testdatei). Chat-Repo: keine Adressen. `.dev.vars` ist ignoriert. Die Push-URL (nur Hostname d11-mailbot.nichtagentur.workers.dev, ohne Schluessel) steht oeffentlich in der Historie: unkritisch.
+- Cloud-Codepfad (bot.mjs --once, ask-app, mail, shot, events) nutzt keine /home/student-Pfade. routing.js/graph.json/stops.json werden von der veroeffentlichten App geladen. Playwright kommt aus npm ci + `playwright install`. Env-Dateien (~/.env, ~/.config/d11-mailbot.env) werden nur optional gelesen. State liegt im Worker-KV.
+
+## Findings
+
+### HOCH
+1. Stiller Verlust bei Fehlern. bot.mjs markiert die Mail vor der Bearbeitung als verarbeitet (`state.processed.push; saveRemote`). Fehlt danach die Antwort (OpenRouter-Key leer/abgelaufen -> App 502/402, "Zu viele Tool-Schleifen", Screenshot-Timeout), bekommt die Nutzerin weder Antwort noch Fehlermail; die Mail wird nie wiederholt. Der Selftest-Lauf mit Fehler zeigt, dass das real vorkommt.
+   Fix: im catch von handle() (nur bei send && echter Absender OWNER) eine kurze Fehlermail senden ("Antwort gerade nicht moeglich, bitte spaeter nochmal; Grund: ...", mit Header X-Mailbot), maximal 1 pro Mail. Zusaetzlich bei "Zu viele Tool-Schleifen" einmal wiederholen.
+2. Zeitplan ist noch nicht bestaetigt. Kein einziger `schedule`-Lauf. Fix: vor Abgabe warten bis `gh run list -R nichtagentur/d11-mailbot -e schedule` mindestens einen Lauf zeigt; sonst Anleitung nicht als "laeuft" ausgeben.
+
+### MITTEL
+3. 60-Tage-Pause: Anleitung nennt sie, aber der Bot stoppt dann still. workflow_dispatch-Laeufe zaehlen nicht als Aktivitaet, nur Commits. Fix: zweiten Workflow `keepalive` (monatlich, `gh api -X PUT repos/.../actions/workflows/mailbot.yml/enable` mit GITHUB_TOKEN-Rechten `actions: write`) oder in der Anleitung eine feste Erinnerung "alle 50 Tage einen Commit". Tipp: im Dashboard sichtbar machen, wenn lastPoll aelter als 30 min ist.
+4. OpenRouter-Ablauf: Anleitung Abschnitt 3.3 sagt "dann neuen Schluessel ... als Secret setzen (Abschnitt 5, Schritt 2)". Fuer jemanden ohne Konto-Zugriff ist das unmoeglich (Worker liegt im Workshop-Konto), und der Hinweis kommt erst nach Umzug in Frage. Fix: klar schreiben "Vor dem Umzug: den Trainer bitten (franz...); nach dem Umzug: `npx wrangler secret put OPENROUTER_API_KEY` im Ordner d11-wien-chat". Ausserdem steht dort nicht, dass der Bot dann stumm bleibt (siehe 1).
+5. Dry-run-Anleitung funktioniert so nicht. test/*.eml ist in .gitignore, ein frischer Clone hat keine .eml. Ausserdem: (a) die Mail muss von MAILBOT_OWNER stammen und den Header `Received-SPF: pass ... envelope-from=<...@owner-domain>` tragen, sonst "IGNORED: Absender nicht verifiziert"; (b) `~/.config/d11-mailbot.env` ist unter Windows unklar, einfacher `MAILBOT_OWNER=... node bot.mjs --dry-run datei.eml` (bzw. `$env:MAILBOT_OWNER=...`); (c) `npx playwright install chromium` fehlt (npm install laedt den Browser nicht); (d) so sendet er wirklich nichts (send:false), das stimmt. Fix: Abschnitt umschreiben: "In Gmail/Outlook eine eigene Mail 'Original anzeigen/herunterladen' als test/meine.eml speichern" oder einfacher den Selftest per Workflow nutzen; Zeile fuer Playwright und Umgebungsvariable ergaenzen. Alternativ eine ungeschuetzte Beispieldatei test/beispiel.eml ins Repo (Gitignore-Ausnahme `!test/beispiel.eml`).
+6. Schritt 3 der Anleitung (Dashboard) widerspruechlich: `openssl rand -hex 24 | wrangler secret put PUSH_SECRET` verliert den Wert, und der Hinweis darunter sagt, man brauche ihn nochmal. openssl fehlt unter Windows (nur in Git Bash). Fix: erst `openssl rand -hex 24` ausgeben, notieren, dann `npx wrangler secret put PUSH_SECRET` einfuegen; Alternative `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`.
+7. KV-Binding: Der Name `EVENTS` ist korrekt, aber die Anleitung sagt nicht, dass die alte id aus worker/wrangler.toml ersetzt werden muss (steht dort fest: d3e6...). Sie sagt "bei id = eintragen": ok, aber Hinweis "ersetzen, nicht ergaenzen" und dass `wrangler kv namespace create` evtl. selbst den Block ausgibt (wrangler 4: `kv namespace create EVENTS` braucht `--binding`-Zeile optional). Fix: Wortlaut praezisieren.
+8. Neue Mailbox-Anbieter: IMAP-Ordner `Junk` ist fest codiert (FOLDERS), SPF-Pruefung haengt an Received-SPF. Anleitung erwaehnt SPF, aber nicht den Ordner. Gmail heisst "[Gmail]/Spam". Fix: Hinweis oder Variable MAILBOT_FOLDERS.
+
+### NIEDRIG
+9. Personenbezug im oeffentlichen Repo (keine Mailadressen): "Robert" in CLAUDE.md/AGENTS.md ("Roberts Adresse"), ANLEITUNG.md Zeile 3 ("Desktop 11 (Robert)"), events.mjs NOTIFY-Text ('Mail von Robert'), docs/security-review-1.md, docs/build-bot.md / changes (test/robert*.eml Dateinamen), Franz Enzenhofer in ANLEITUNG. Fix: durch "der Besitzer" / "Workshop-Teilnehmer" ersetzen; Trainer-Nennung nur wenn gewollt.
+10. Lokale Reste im oeffentlichen Repo: d11-mailbot.service (linuxbrew, /run/user/1000), events.mjs-Desktop-Benachrichtigung (pgrep/notify-send, im Actions-Lauf wirkungslos, aber Cloud-Laeufe starten diese Prozesse bei jedem emit), events-stub.mjs, docs. Kein Laufzeit-Problem, nur Aufraeumen: Datei unter `local/` verschieben, notify im --once-Lauf abschalten.
+11. Chat-Worker: ALLOWED_ORIGIN in src/worker.js ist hart auf die nichtagentur-Adresse gesetzt. Nach dem Umzug bleibt POST /api/chat erlaubt (same-origin wird akzeptiert, ebenso Origin == Request-Origin, also auch der Bot mit MAILBOT_APP_URL), nur der OpenRouter-Referer-Header zeigt die alte Adresse (kosmetisch). Ein Hinweis in der Anleitung genuegt.
+12. wrangler.toml des Chats hat `[[ratelimits]]` (namespace_id "1011", 20/60 s). Der Worker braucht sonst nur das Secret OPENROUTER_API_KEY (kein KV, keine weiteren Secrets); das Binding ist ohne Konto-Setup moeglich, der Code faellt ohne Binding auf In-Memory zurueck. Fix in Anleitung: einen Satz "Kein weiteres Secret noetig; falls der Deploy wegen ratelimits fehlschlaegt, den Block [[ratelimits]] loeschen".
+13. Beschriebene Zahlen: "bis zu 15 Minuten", "10 Antworten pro Stunde", "ca. 0,1 Cent" decken sich mit Code (rateLimited 10/h, cron 5 min). Die erste Antwort kann auch laenger dauern (Playwright-Installation, timeout-minutes 8).
+
+## Guide: Abgleich Namen
+Korrekt gegen Code/Workflow: Secrets SMTP_PASS, MAILBOT_OWNER, MAILBOT_PUSH_URL, MAILBOT_PUSH_SECRET; Variables MAILBOT_APP_URL, MAILBOT_USER, MAILBOT_IMAP_HOST, MAILBOT_SMTP_HOST (Ports 993/587 fest im Code); Worker-Secrets PUSH_SECRET, VIEW_KEY, OPENROUTER_API_KEY; KV-Binding EVENTS; Workflow-Eingabe "Testfrage" (selftest); `node bot.mjs --dry-run test/<mail>.eml`; Dateipfade (src/worker.js, public/, bot.mjs, mail.mjs, shot.mjs, .github/workflows/mailbot.yml) vorhanden. MAILBOT_PUSH_URL = Dashboard-Adresse ohne ?k= ist richtig (Code haengt /api/botstate an).
+Fehlt: Hinweis, dass nach dem Umzug der alte KV-State fehlt (erster Lauf setzt `since` neu, Mails davor werden nie beantwortet); dass die Mail-Antwort an MAILBOT_OWNER geht, nicht an den Absender anderer Adressen; Troubleshooting ("keine Antwort nach 20 Min": Actions-Log pruefen, Dashboard, OpenRouter-Guthaben).
+
+## Risiken
+- Doppelte Antworten: unwahrscheinlich. Mail wird vor dem Bearbeiten remote als verarbeitet gespeichert (at-most-once); `concurrency: mailbot, cancel-in-progress: false` serialisiert Laeufe. Restrisiko: Prozess stirbt nach dem Senden und vor Speichern -> hoechstens Ausfall, keine Wiederholung. Vorsicht: scheitert saveRemote() vor handle(), bricht der Lauf ab, ohne zu antworten (kein Doppel).
+- Race: zwei Laeufe nie gleichzeitig (concurrency). Wartende Laeufe werden zu einem zusammengefasst. Lokaler Dienst ist inaktiv, damit keine zweite IMAP-Verbindung/Doppelantwort. Das muss so bleiben, auch nach einem Reboot (disabled: ok).
+- 60-Tage-Pause: siehe 3.
+- OpenRouter-Key abgelaufen: Chat-App meldet Fehler, Bot sendet nichts (siehe 1).
+- Single Point of Failure: Workshop-Konten (GitHub, Cloudflare, easyname-Postfach). Passwort SMTP_PASS wird vom Trainer eventuell geaendert -> Bot faellt aus, ohne Meldung.
+- Gleichzeitige Last: shared inbox, ein Poll alle 5 Min mit eigener IMAP-Verbindung: ok.

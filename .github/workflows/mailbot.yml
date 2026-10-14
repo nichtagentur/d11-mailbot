@@ -12,6 +12,9 @@ on:
 concurrency:
   group: mailbot
   cancel-in-progress: false
+permissions:
+  contents: read
+  actions: write   # nur fuer den Keepalive unten
 jobs:
   poll:
     runs-on: ubuntu-latest
@@ -43,3 +46,10 @@ jobs:
           MAILBOT_IMAP_HOST: ${{ vars.MAILBOT_IMAP_HOST }}
           MAILBOT_SMTP_HOST: ${{ vars.MAILBOT_SMTP_HOST }}
           MAILBOT_APP_URL: ${{ vars.MAILBOT_APP_URL }}
+          MAILBOT_FOLDERS: ${{ vars.MAILBOT_FOLDERS }}
+      - name: Keepalive (GitHub pausiert Zeitplaene sonst nach 60 Tagen ohne Aenderung)
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/mailbot.yml/enable"

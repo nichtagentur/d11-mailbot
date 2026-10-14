@@ -4,3 +4,4 @@ state.json
 test/*.eml
 *.env
 .wrangler/
+!test/beispiel.eml
